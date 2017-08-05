@@ -2,11 +2,24 @@ import React, { Component, PropTypes } from 'react';
 import ReactDOM from 'react-dom';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
-
-import { Tasks } from '../api/tasks.js';
-
-import Task from './Task.jsx';
+import Modal from 'react-modal'
+import { SearchResults } from '../api/searchResults.js';
+import { Patients } from '../api/patients.js';
+import SearchModal from './SearchModal.jsx'
+import Patient from './Patient.jsx';
+import SearchResult from './SearchResult.jsx'
 import AccountsUIWrapper from './AccountsUIWrapper.jsx';
+
+const customStyles = {
+  content : {
+    top                   : '50%',
+    left                  : '50%',
+    right                 : 'auto',
+    bottom                : 'auto',
+    marginRight           : '-50%',
+    transform             : 'translate(-50%, -50%)'
+  },
+};
 
 // App component - represents the whole app
 class App extends Component {
@@ -15,7 +28,14 @@ class App extends Component {
 
     this.state = {
       hideCompleted: false,
+      modalIsOpen: false,
+      startIndex: 0
     };
+    this.openModal = this.openModal.bind(this);
+    this.afterOpenModal = this.afterOpenModal.bind(this);
+    this.closeModal = this.closeModal.bind(this);
+    this.savePt = this.savePt.bind(this);
+    this.incrementStartIndex = this.incrementStartIndex.bind(this);
   }
 
   handleSubmit(event) {
@@ -23,8 +43,9 @@ class App extends Component {
 
     // Find the text field via the React ref
     const text = ReactDOM.findDOMNode(this.refs.textInput).value.trim();
+    this.setState({startIndex: 0})
 
-    Meteor.call('tasks.insert', text);
+    Meteor.call('searchResults.insert', text, this.props.currentUser._id);
 
     // Clear form
     ReactDOM.findDOMNode(this.refs.textInput).value = '';
@@ -36,20 +57,66 @@ class App extends Component {
     });
   }
 
-  renderTasks() {
-    let filteredTasks = this.props.tasks;
+  openModal() {
+     Meteor.call('searchResults.clearResults');
+     this.setState({modalIsOpen: true});
+   }
+
+
+   afterOpenModal() {
+     // references are now sync'd and can be accessed.
+   }
+
+   closeModal() {
+     this.setState({modalIsOpen: false});
+   }
+
+  renderPatients() {
+    let filteredPatients = this.props.patients;
     if (this.state.hideCompleted) {
-      filteredTasks = filteredTasks.filter(task => !task.checked);
+      filteredPatients = filteredPatients.filter(patient => !patient.checked);
     }
-    return filteredTasks.map((task) => {
+    return filteredPatients.map((patient) => {
       const currentUserId = this.props.currentUser && this.props.currentUser._id;
-      const showPrivateButton = task.owner === currentUserId;
+      const showPrivateButton = patient.owner === currentUserId;
 
       return (
-        <Task
-          key={task._id}
-          task={task}
+        <Patient
+          key={patient._id}
+          patient={patient}
           showPrivateButton={showPrivateButton}
+        />
+      );
+    });
+  }
+
+  savePt() {
+    this.props.searchResults.map((sr) => {
+      if(sr.selected){
+        Meteor.call('patients.insert', sr)
+      }
+    })
+  }
+
+  incrementStartIndex(inc){
+    this.setState((prevState,props) => {
+      return {startIndex: Math.min(Math.max(prevState.startIndex + inc, 0), this.props.searchResults.length - inc)};
+    })
+  }
+
+  renderSearchResults() {
+    const startIndex = this.state.startIndex;
+    const endIndex = Math.min(startIndex + 4, this.props.searchResults.length);
+    console.log(this.props.searchResults.length)
+    console.log(this.state.startIndex)
+    return this.props.searchResults.slice(startIndex, endIndex).map((sr) => {
+      const currentUserId = this.props.currentUser && this.props.currentUser._id;
+      const showPrivateButton = sr.owner === currentUserId;
+
+      return (
+        <SearchResult
+          key={sr._id}
+          sr={sr}
         />
       );
     });
@@ -68,24 +135,43 @@ class App extends Component {
               checked={this.state.hideCompleted}
               onClick={this.toggleHideCompleted.bind(this)}
             />
-            Hide Completed Tasks
+            Hide Completed Patients
           </label>
 
           <AccountsUIWrapper />
 
+
+        </header>
+        <div>
+          <button onClick={this.openModal}>Search for a patient in EMR</button>
+          <Modal
+           isOpen={this.state.modalIsOpen}
+           onAfterOpen={this.afterOpenModal}
+           onRequestClose={this.closeModal}
+           style={customStyles}
+           contentLabel="Example Modal"
+          >
           { this.props.currentUser ?
-            <form className="new-task" onSubmit={this.handleSubmit.bind(this)} >
+            <form className="new-patient" onSubmit={this.handleSubmit.bind(this)} >
               <input
                 type="text"
                 ref="textInput"
-                placeholder="Type to add new tasks"
+                placeholder="Search for patient"
               />
             </form> : ''
           }
-        </header>
+            <ul>
+              {this.renderSearchResults(0)}
+            </ul>
+          <button onClick={this.savePt}>add to my patients </button>
+          <button onClick={this.closeModal}>close</button>
+          <button onClick={() => {this.incrementStartIndex(-this.props.inc) } }>prev</button>
+          <button onClick={() => {this.incrementStartIndex(this.props.inc) } }>next</button>
+        </Modal>
+      </div>
 
         <ul>
-          {this.renderTasks()}
+          {this.renderPatients()}
         </ul>
       </div>
     );
@@ -93,17 +179,21 @@ class App extends Component {
 }
 
 App.propTypes = {
-  tasks: PropTypes.array.isRequired,
+  patients: PropTypes.array.isRequired,
+  patients: PropTypes.array.isRequired,
   incompleteCount: PropTypes.number.isRequired,
   currentUser: PropTypes.object,
 };
 
 export default createContainer(() => {
-  Meteor.subscribe('tasks');
+  Meteor.subscribe('patients');
+  Meteor.subscribe('searchResults');
 
   return {
-    tasks: Tasks.find({}, { sort: { createdAt: -1 } }).fetch(),
-    incompleteCount: Tasks.find({ checked: { $ne: true } }).count(),
+    patients: Patients.find({}, { sort: { createdAt: -1 } }).fetch(),
+    searchResults: SearchResults.find({}).fetch(),
+    incompleteCount: Patients.find({ checked: { $ne: true } }).count(),
     currentUser: Meteor.user(),
+    inc: 4,
   };
 }, App);
