@@ -37,7 +37,7 @@ export default class SearchResult extends Component {
           onClick={this.toggleSelectResult.bind(this)}
           >
         <span className="text">
-          <strong>{this.props.sr.username}</strong>: {this.props.sr.text}
+           {this.props.sr.text}
         </span>
       </li>
     );

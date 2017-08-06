@@ -34,13 +34,6 @@ export default class Patient extends Component {
           &times;
         </button>
 
-        <input
-          type="checkbox"
-          readOnly
-          checked={this.props.patient.checked}
-          onClick={this.toggleChecked.bind(this)}
-        />
-
         { this.props.showPrivateButton ? (
           <button className="toggle-private" onClick={this.togglePrivate.bind(this)}>
             { this.props.patient.private ? 'Private' : 'Public' }
@@ -48,7 +41,7 @@ export default class Patient extends Component {
         ) : ''}
 
         <span className="text">
-          <strong>{this.props.patient.username}</strong>: {this.props.patient.text}
+           {this.props.patient.text}
         </span>
       </li>
     );

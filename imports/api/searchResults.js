@@ -53,7 +53,7 @@ async function searchFHIR(text, userId){
 var patient_array = await Promise.all([client, client2].map(function(x){ return searchClient(x, text)}))
 patient_array = patient_array.reduce(function(a,b){return a.concat(b)}, [])
 patient_array.map(function(patient){
-  if (patient.resource.name[0].given[0].includes(text)) {
+  if (patient.resource.name[0].given[0].toLowerCase().includes(text.toLowerCase())) {
   SearchResults.insert({
         text: patient.resource.name[0].given[0],
         //TODO: unclear whether this identifier is consistent accross time and

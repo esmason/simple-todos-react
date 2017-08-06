@@ -78,6 +78,28 @@ ul {
   position: relative;
 }
 
+.modal-close {
+  font-weight: bold;
+  background: none;
+  font-size: 2em;
+  border: none;
+  position: absolute;
+  top:0;
+  right:0;
+}
+
+.modal-next {
+  position: absolute;
+  bottom:0;
+  right:0;
+}
+
+.modal-prev {
+  position: absolute;
+  bottom:0;
+  left:0;
+}
+
 li {
   position: relative;
   list-style: none;

@@ -29,7 +29,7 @@ class App extends Component {
     this.state = {
       hideCompleted: false,
       modalIsOpen: false,
-      startIndex: 0
+      startIndex: 0,
     };
     this.openModal = this.openModal.bind(this);
     this.afterOpenModal = this.afterOpenModal.bind(this);
@@ -44,9 +44,7 @@ class App extends Component {
     // Find the text field via the React ref
     const text = ReactDOM.findDOMNode(this.refs.textInput).value.trim();
     this.setState({startIndex: 0})
-
-    Meteor.call('searchResults.insert', text, this.props.currentUser._id);
-
+    Meteor.call('searchResults.insert', text, this.props.currentUser._id)
     // Clear form
     ReactDOM.findDOMNode(this.refs.textInput).value = '';
   }
@@ -126,17 +124,7 @@ class App extends Component {
     return (
       <div className="container">
         <header>
-          <h1>Todo List ({this.props.incompleteCount})</h1>
-
-          <label className="hide-completed">
-            <input
-              type="checkbox"
-              readOnly
-              checked={this.state.hideCompleted}
-              onClick={this.toggleHideCompleted.bind(this)}
-            />
-            Hide Completed Patients
-          </label>
+          <h1> My patients ({this.props.incompleteCount})</h1>
 
           <AccountsUIWrapper />
 
@@ -163,10 +151,26 @@ class App extends Component {
             <ul>
               {this.renderSearchResults(0)}
             </ul>
-          <button onClick={this.savePt}>add to my patients </button>
-          <button onClick={this.closeModal}>close</button>
-          <button onClick={() => {this.incrementStartIndex(-this.props.inc) } }>prev</button>
-          <button onClick={() => {this.incrementStartIndex(this.props.inc) } }>next</button>
+          <button
+            onClick={this.savePt}
+            hidden={(this.props.searchResults.length == 0)}>
+            add to my patients
+          </button>
+          <button
+            className="modal-close"
+            onClick={this.closeModal}>
+            &times;
+          </button>
+          <button
+            className="modal-prev"
+            onClick={() => {this.incrementStartIndex(-this.props.inc) } }>
+            prev
+          </button>
+          <button
+            className="modal-next"
+            onClick={() => {this.incrementStartIndex(this.props.inc) } }>
+            next
+          </button>
         </Modal>
       </div>
 
